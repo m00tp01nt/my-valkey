@@ -61,6 +61,30 @@ bool hashtable_set_load_factor(Hashtable* const hashtable, float loadFactor) {
 
 }
 
+bool hashtable_set(Hashtable* const hashtable, const char *key, const char *value) {
+    
+    int hashValue = hash(key, hashtable->bucketCount);
+
+    HashtableEntry* bucketHead = hashtable->buckets[hashValue];
+
+    HashtableEntry* entry = (HashtableEntry*) malloc(sizeof(HashtableEntry));
+
+    if (bucketHead == NULL) {
+        
+        entry->key = key;
+        entry->value = value;
+
+        entry->next = NULL;
+
+        bucketHead = entry;
+
+        hashtable->entries++;
+
+        return true;
+    }
+
+}
+
 bool hashtable_destroy(Hashtable *hashtable) {
 
     free(hashtable->buckets);
