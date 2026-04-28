@@ -15,9 +15,14 @@
 
 /* -------- Protocol constants (do NOT change) ---------------------------- */
 
-#define MAX_KEY_LEN    256
-#define MAX_VAL_LEN    256
-#define MAX_LINE_LEN   (MAX_KEY_LEN + MAX_VAL_LEN + 64)  /* + command + ttl */
+#define MAX_KEY_LEN         256
+#define MAX_VAL_LEN         256
+#define MAX_COMMAND_LEN     5
+#define MAX_TTL_LEN         5
+#define MAX_SPACE_COUNT     3
+
+// Tighter max line length
+#define MAX_LINE_LEN        (MAX_KEY_LEN + MAX_VAL_LEN + MAX_COMMAND_LEN + MAX_TTL_LEN + MAX_SPACE_COUNT) /* + command + ttl */
 
 /* Response strings. Each response is one line ending in '\n'. */
 #define RESP_OK        "OK\n"
