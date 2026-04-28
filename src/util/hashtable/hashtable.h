@@ -22,6 +22,6 @@ const char* hashtable_get(const Hashtable* hashtable, const char* key);
 
 bool hashtable_delete(const Hashtable* hashtable, const char* key);
 
-bool hashtable_destroy(const Hashtable* hashtable);
+bool hashtable_destroy(Hashtable* hashtable);
 
 const HashtableStatistics* hashtable_get_statistics(const Hashtable* hashtable);
