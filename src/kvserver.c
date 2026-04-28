@@ -113,6 +113,19 @@ int main(int argc, char **argv) {
         "(workers=%d, buckets=%d, sweeper=%dms)\n",
         port, num_workers, num_buckets, sweeper_ms);
 
+    while (!g_shutdown) {
+        while (!g_shutdown) {
+            int conn = accept(listen_fd, NULL, NULL);
+            if (conn < 0) {
+
+                // ...handle EINTR on signal, else perror...
+
+            }
+            handle_client(conn);
+            close(conn);
+        }
+    }
+
     /* ================================================================
      * TODO (Stage 1): Sequential accept loop.
      *   while (!g_shutdown) {
@@ -136,4 +149,14 @@ int main(int argc, char **argv) {
 
     close(listen_fd);
     return 0;
+}
+
+void handle_client(int connection) {
+
+    char buffer[MAX_COMMAND_LEN];
+
+    ssize_t bytes = read(connection, buffer, MAX_COMMAND_LEN);
+
+    if (bytes)
+
 }

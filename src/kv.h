@@ -22,7 +22,7 @@
 #define MAX_SPACE_COUNT     3
 
 // Tighter max line length
-#define MAX_LINE_LEN        (MAX_KEY_LEN + MAX_VAL_LEN + MAX_COMMAND_LEN + MAX_TTL_LEN + MAX_SPACE_COUNT) /* + command + ttl */
+#define MAX_LINE_LEN        (MAX_KEY_LEN + MAX_VAL_LEN + MAX_COMMAND_LEN + MAX_TTL_LEN + MAX_SPACE_COUNT + 64)
 
 /* Response strings. Each response is one line ending in '\n'. */
 #define RESP_OK        "OK\n"
@@ -45,7 +45,7 @@
 /* -------- Function prototypes you will likely want ---------------------- */
 
 /* Protocol / connection handling (Stage 1) */
-void handle_client(int conn_fd);        /* loop: read line, parse, reply */
+void handle_client(int);        /* loop: read line, parse, reply */
 
 /* Hash-table operations (Stage 1, made thread-safe in Stage 3) */
 /*   Return 0 on success, -1 on not-found / error. */

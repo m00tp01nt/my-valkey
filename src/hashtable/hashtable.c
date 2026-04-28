@@ -6,7 +6,7 @@
 // perror()
 #include <stdio.h>
 
-#include "../../kv.h"
+#include "../kv.h"
 
 #define HASHTABLE_INITIAL_SIZE 5
 #define HASHTABLE_DEFAULT_LOAD_FACTOR 0.75
@@ -83,6 +83,7 @@ bool hashtable_set(Hashtable* const hashtable, const char *key, const char *valu
         return true;
     }
 
+    return false;
 }
 
 bool hashtable_destroy(Hashtable *hashtable) {

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../util/bool.h"
+#include "../util/bool.h"
 
 // Types
 typedef struct Hashtable Hashtable;

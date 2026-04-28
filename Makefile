@@ -11,7 +11,9 @@ CC      = gcc
 CFLAGS  = -Wall -Wextra -Wpedantic -std=c11 -O2 -g -pthread
 LDFLAGS = -pthread
 
-SERVER_SRCS = src/kvserver.c src/util/hashtable/hashtable.c
+SERVER_SRCS = src/kvserver.c
+
+SERVER_SRCS += src/hashtable/hashtable.c
 
 BENCH_SRCS  = bench_client.c
 
