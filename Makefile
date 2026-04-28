@@ -11,9 +11,7 @@ CC      = gcc
 CFLAGS  = -Wall -Wextra -Wpedantic -std=c11 -O2 -g -pthread
 LDFLAGS = -pthread
 
-SERVER_SRCS = kvserver.c
-#   Add your own source files here as you create them, e.g.:
-#   SERVER_SRCS += table.c queue.c protocol.c sweeper.c
+SERVER_SRCS = src/kvserver.c src/util/hashtable/hashtable.c
 
 BENCH_SRCS  = bench_client.c
 
@@ -26,7 +24,7 @@ all: $(SERVER_BIN)
 
 bench: $(BENCH_BIN)
 
-$(SERVER_BIN): $(SERVER_SRCS) kv.h
+$(SERVER_BIN): $(SERVER_SRCS)
 	$(CC) $(CFLAGS) -o $@ $(SERVER_SRCS) $(LDFLAGS)
 
 $(BENCH_BIN): $(BENCH_SRCS)

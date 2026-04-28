@@ -3,7 +3,7 @@
 #include "../../util/bool.h"
 
 // Types
-typedef struct Hashtable;
+typedef struct Hashtable Hashtable;
 
 typedef struct {
 
