@@ -8,8 +8,12 @@
 #   make tsan        build with ThreadSanitizer (Stage 3+ debugging)
 
 CC      = gcc
-CFLAGS  = -Wall -Wextra -Wpedantic -std=c11 -O2 -g -pthread
+CFLAGS  = -Wall -Wextra -Wpedantic -g -pthread
 CFLAGS  += -Wswitch
+CFLAGS  += -Wswitch
+# CFLAGS  += -O2
+CFLAGS  += -O0
+
 LDFLAGS = -pthread
 
 SERVER_SRCS = src/kvserver.c

@@ -1,3 +1,6 @@
+// needed for strnlen
+#define _POSIX_C_SOURCE 200809L
+
 #include "input.h"
 
 #include <string.h>
@@ -12,17 +15,17 @@
 #include "parse.h"
 #include "problem.h"
 
-bool hasCorrectTermination(const char* input);
-
 typedef struct Tokens {
-
-    bool success;
 
     int tokenCount;
 
     char** tokens;
 
 } Tokens;
+
+bool hasCorrectTermination(const char* input);
+Tokens tokenize(const char* input);
+bool argumentsAreValid(Command* command);
 
 Command parseInput(const char* input) {
     
@@ -34,9 +37,94 @@ Command parseInput(const char* input) {
         result.problem = I_PROBLEM_BAD_TERMINATION;
         return result;
     }
-
     
+    Tokens tokens = tokenize(input);
 
+    if (tokens.tokenCount > MAX_TOKEN_COUNT) {
+        result.problem = I_PROBLEM_TOO_MANY_ARGS;
+        return result;
+    }
+
+    Operation operation = stringToOperation(tokens.tokens[0]);
+
+    int arguments = tokens.tokenCount - 1;
+
+    switch (operation) {
+
+        case GET:
+            if (arguments > O_GET_MAX_ARGS) {
+                result.problem = I_PROBLEM_TOO_MANY_ARGS " | " O_GET_USAGE;
+                break;
+            }
+            if (arguments < O_GET_MIN_ARGS) {
+                result.problem = I_PROBLEM_TOO_FEW_ARGS " | " O_GET_USAGE;
+                break;
+            }
+            
+            result.operation = GET;
+            result.key = tokens.tokens[1];
+            break;
+
+        case PUT:
+            if (arguments > O_PUT_MAX_ARGS) {
+                result.problem = I_PROBLEM_TOO_MANY_ARGS " | " O_PUT_USAGE;
+                break;
+            }
+            if (arguments < O_PUT_MIN_ARGS) {
+                result.problem = I_PROBLEM_TOO_FEW_ARGS " | " O_PUT_USAGE;
+                break;
+            }
+
+            result.key = tokens.tokens[1];
+            result.value = tokens.tokens[2];
+            if (arguments == 3) result.ttl = (int) strtoul(tokens.tokens[3], NULL, 10);
+            break;
+
+        case DEL:
+            if (arguments > O_DEL_MAX_ARGS) {
+                result.problem = I_PROBLEM_TOO_MANY_ARGS " | " O_DEL_USAGE;
+                break;
+            }
+            if (arguments < O_DEL_MIN_ARGS) {
+                result.problem = I_PROBLEM_TOO_FEW_ARGS " | " O_DEL_USAGE;
+                break;
+            }
+
+            result.key = tokens.tokens[1];
+
+            break;
+
+        case STATS:
+            if (arguments > O_STATS_MAX_ARGS) {
+                result.problem = I_PROBLEM_TOO_MANY_ARGS " | " O_STATS_USAGE;
+                break;
+            }
+            if (arguments < O_STATS_MIN_ARGS) {
+                result.problem = I_PROBLEM_TOO_FEW_ARGS " | " O_STATS_USAGE;
+                break;
+            }
+            break;
+
+        case QUIT:
+            if (arguments > O_QUIT_MAX_ARGS) {
+                result.problem = I_PROBLEM_TOO_MANY_ARGS " | " O_QUIT_USAGE;
+                break;
+            }
+            if (arguments < O_QUIT_MIN_ARGS) {
+                result.problem = I_PROBLEM_TOO_FEW_ARGS " | " O_QUIT_USAGE;
+                break;
+            }
+            break;
+
+        case UNKNOWN:
+            result.problem = I_PROBLEM_UNKNOWN_OPERATION;
+    }
+
+    if (result.problem != NULL) return result;
+
+    if (!argumentsAreValid(&result)) return result;
+
+    return result;
 }
 
 bool hasCorrectTermination(const char* input) {
@@ -58,7 +146,6 @@ Tokens tokenize(const char* input) {
 
     Tokens tokens = {0};
 
-    tokens.success = false;
     tokens.tokenCount = 0;
 
     int delimiter[MAX_LINE_LEN >> 1];
@@ -95,6 +182,7 @@ Tokens tokenize(const char* input) {
             tokenLength++;
 
         tokenStartIndex++;
+        tokenLength--;
 
         char* token = (char*) malloc((tokenLength + 1) * sizeof(char));
 
@@ -108,13 +196,27 @@ Tokens tokenize(const char* input) {
     return tokens;
 }
 
-int main(void) {
+bool argumentsAreValid(Command* command) {
 
-    Tokens tokens = tokenize("Hello this is a test\n");
+    bool problem;
 
-    for (size_t i = 0; i < tokens.tokenCount; i++) {
-        printf("%s\n", tokens.tokens[i]);
+    problem = strnlen(command->key, MAX_KEY_LEN + 1) == MAX_KEY_LEN + 1 ? true : false;
+    if (problem) {
+        command->problem = I_PROBLEM_KEY_TOO_LONG;
+        return false;
     }
-    
 
+    problem = strnlen(command->key, MAX_VAL_LEN + 1) == MAX_VAL_LEN + 1 ? true : false;
+    if (problem) {
+        command->problem = I_PROBLEM_VAL_TOO_LONG;
+        return false;
+    }
+
+    problem = (command->ttl > MAX_TTL) ? true : false;
+    if (problem) {
+        command->problem = I_PROBLEM_TTL_TOO_LARGE;
+        return false;
+    }
+
+    return true;
 }

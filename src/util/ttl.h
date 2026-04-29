@@ -1,3 +1,3 @@
 #pragma once
 
-typedef int ttl_t;
+typedef unsigned int ttl_t;

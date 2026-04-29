@@ -24,6 +24,8 @@
 #define MAX_OPERATION_LEN   5
 #define MAX_TTL_LEN         5
 #define MAX_SPACE_COUNT     3
+#define MAX_TOKEN_COUNT     4
+#define MAX_TTL             86400 // 24 hours
 
 #define I_TERMINATOR '\n'
 #define I_DELIMITER ' '
@@ -35,6 +37,30 @@
 #define RESP_OK        "OK\n"
 #define RESP_BYE       "BYE\n"
 #define RESP_NOTFOUND  "NOT_FOUND\n"
+
+// Operation usage
+#define O_USAGE_PREAMBLE "Usage: "
+#define O_USAGE_EPILOGUE "\\n"
+#define O_GET_USAGE O_USAGE_PREAMBLE "GET <key>" O_USAGE_EPILOGUE
+#define O_GET_MIN_ARGS 1
+#define O_GET_MAX_ARGS 1
+
+#define O_PUT_USAGE O_USAGE_PREAMBLE "PUT <key> <value>" O_USAGE_EPILOGUE
+#define O_PUT_TTL_USAGE O_USAGE_PREAMBLE "PUT <key> <value> <ttl>" O_USAGE_EPILOGUE
+#define O_PUT_MIN_ARGS 2
+#define O_PUT_MAX_ARGS 3
+
+#define O_DEL_USAGE O_USAGE_PREAMBLE "DEL <key>" O_USAGE_EPILOGUE
+#define O_DEL_MIN_ARGS 1
+#define O_DEL_MAX_ARGS 1
+
+#define O_STATS_USAGE O_USAGE_PREAMBLE "STATS" O_USAGE_EPILOGUE
+#define O_STATS_MIN_ARGS 0
+#define O_STATS_MAX_ARGS 0
+
+#define O_QUIT_USAGE O_USAGE_PREAMBLE "QUIT" O_USAGE_EPILOGUE
+#define O_QUIT_MIN_ARGS 0
+#define O_QUIT_MAX_ARGS 0
 
 /* -------- Your types go here -------------------------------------------- */
 

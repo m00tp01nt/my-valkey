@@ -1,3 +1,5 @@
+#define _POSIX_C_SOURCE 200809L
+
 /*
  * kvserver.c -- Mini-KV server entry point
  *
@@ -162,21 +164,31 @@ void handle_client(int connection) {
     ssize_t bytes = read(connection, buffer, MAX_LINE_LEN);
 
     // Not too long
-    if (bytes == 0) {
+    if (bytes < MAX_LINE_LEN) {
 
         // Null terminating that mf
         buffer[MAX_LINE_LEN] = '\0';
 
         Command command = parseInput(buffer);
 
+        if (command.problem != NULL) {
+            perror(command.problem);
+            return;
+        }
+
     }
     // Command was too long
-    else if (bytes > 0) {
+    else if (bytes > MAX_LINE_LEN) {
         perror(I_PROBLEM_INPUT_TOO_LONG);
+        return;
+    }
+    else if (bytes == 0) {
+        perror(I_PROBLEM_IO);
+        return;
     }
     // Error reading from socket
     else {
         perror(I_PROBLEM_IO);
+        return;
     }
-
 }

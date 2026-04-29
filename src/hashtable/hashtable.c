@@ -1,5 +1,7 @@
 #include "hashtable.h"
 
+#include <string.h>
+
 // malloc()
 #include <stdlib.h>
 
@@ -10,6 +12,8 @@
 
 #define HASHTABLE_INITIAL_SIZE 5
 #define HASHTABLE_DEFAULT_LOAD_FACTOR 0.75
+
+int hash(const char* key, const int bucketCount);
 
 typedef struct HashtableEntry {
 
@@ -69,10 +73,16 @@ bool hashtable_set(Hashtable* const hashtable, const char *key, const char *valu
 
     HashtableEntry* entry = (HashtableEntry*) malloc(sizeof(HashtableEntry));
 
+    char* tableKey = (char*) malloc((strlen(key) + 1) * sizeof(char));
+    char* tableValue = (char*) malloc((strlen(value) + 1) * sizeof(char));
+
+    strcpy(tableKey, key);
+    strcpy(tableValue, value);
+
     if (bucketHead == NULL) {
         
-        entry->key = key;
-        entry->value = value;
+        entry->key = tableKey;
+        entry->value = tableValue;
 
         entry->next = NULL;
 
@@ -96,7 +106,7 @@ bool hashtable_destroy(Hashtable *hashtable) {
 }
 
 // djb2 hash function
-int hash(const char* key, int bucketCount) {
+int hash(const char* key, const int bucketCount) {
 
     unsigned long hash = 5381;
 

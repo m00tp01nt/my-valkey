@@ -8,7 +8,7 @@
 # basic protocol conformance before your viva. Write your own more thorough
 # tests as you build.
 
-PORT=${1:-9000}
+PORT=${1:-6379}
 
 send() {
     # Send a command and print the reply. Uses nc with a short timeout.
