@@ -27,8 +27,7 @@ char* responseToString(const Response response) {
 
         case BYE: return "BYE";
         
-        default:
-            perror("Unknown response");
+        default: perror("Unknown response");
     }
 
 }

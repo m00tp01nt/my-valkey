@@ -23,6 +23,10 @@
 
 #include "kv.h"
 
+// parse()
+#include "input/input.h"
+#include "input/problem.h"
+
 /* -------- Globals ------------------------------------------------------- */
 
 static volatile sig_atomic_t g_shutdown = 0;
@@ -153,10 +157,26 @@ int main(int argc, char **argv) {
 
 void handle_client(int connection) {
 
-    char buffer[MAX_COMMAND_LEN];
+    char buffer[MAX_LINE_LEN + 1];
 
-    ssize_t bytes = read(connection, buffer, MAX_COMMAND_LEN);
+    ssize_t bytes = read(connection, buffer, MAX_LINE_LEN);
 
-    if (bytes)
+    // Not too long
+    if (bytes == 0) {
+
+        // Null terminating that mf
+        buffer[MAX_LINE_LEN] = '\0';
+
+        Command command = parseInput(buffer);
+
+    }
+    // Command was too long
+    else if (bytes > 0) {
+        perror(I_PROBLEM_INPUT_TOO_LONG);
+    }
+    // Error reading from socket
+    else {
+        perror(I_PROBLEM_IO);
+    }
 
 }

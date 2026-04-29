@@ -9,11 +9,17 @@
 
 CC      = gcc
 CFLAGS  = -Wall -Wextra -Wpedantic -std=c11 -O2 -g -pthread
+CFLAGS  += -Wswitch
 LDFLAGS = -pthread
 
 SERVER_SRCS = src/kvserver.c
 
+# Hashtable
 SERVER_SRCS += src/hashtable/hashtable.c
+
+# Input
+SERVER_SRCS += src/input/input.c
+SERVER_SRCS += src/input/operation.c
 
 BENCH_SRCS  = bench_client.c
 

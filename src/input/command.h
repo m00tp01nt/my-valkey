@@ -16,4 +16,6 @@ typedef struct Command {
 
     ttl_t ttl;
 
+    char* problem;
+
 } Command;

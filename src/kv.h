@@ -13,16 +13,23 @@
 #include <stdint.h>
 #include <time.h>
 
+// Claude generated, supposed to let me use the defined constants in string macros
+#define STRINGIFY(x) #x
+#define TOSTRING(x) STRINGIFY(x)
+
 /* -------- Protocol constants (do NOT change) ---------------------------- */
 
 #define MAX_KEY_LEN         256
 #define MAX_VAL_LEN         256
-#define MAX_COMMAND_LEN     5
+#define MAX_OPERATION_LEN   5
 #define MAX_TTL_LEN         5
 #define MAX_SPACE_COUNT     3
 
+#define I_TERMINATOR '\n'
+#define I_DELIMITER ' '
+
 // Tighter max line length
-#define MAX_LINE_LEN        (MAX_KEY_LEN + MAX_VAL_LEN + MAX_COMMAND_LEN + MAX_TTL_LEN + MAX_SPACE_COUNT + 64)
+#define MAX_LINE_LEN        (MAX_OPERATION_LEN + MAX_KEY_LEN + MAX_VAL_LEN + MAX_TTL_LEN + MAX_SPACE_COUNT + 64)
 
 /* Response strings. Each response is one line ending in '\n'. */
 #define RESP_OK        "OK\n"

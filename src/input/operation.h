@@ -1,5 +1,11 @@
 #pragma once
 
+// MAX_
+#include "../kv.h"
+
+// strncmp()
+#include <string.h>
+
 typedef enum Operation {
 
     GET,
@@ -11,3 +17,5 @@ typedef enum Operation {
     UNKNOWN,
 
 } Operation;
+
+Operation stringToOperation(const char* input);
