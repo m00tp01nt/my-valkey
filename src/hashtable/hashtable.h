@@ -8,20 +8,20 @@ typedef struct Hashtable Hashtable;
 
 typedef struct {
 
-    int entries;
-
-    int misses;
-
-    int hits;
+    unsigned int entries;
+    unsigned int misses;
+    unsigned int hits;
+    unsigned int deletes;
+    unsigned int buckets;
 
 } HashtableStatistics;
 
 // Functions
 Hashtable* hashtable_create(int bucketCount);
 
-bool hashtable_set(Hashtable* const hashtable, const char* key, const char* value);
+bool hashtable_set(Hashtable* hashtable, const char* key, const char* value);
 
-bool hashtable_set_ttl(Hashtable* const hashtable, const char* key, const char* value, ttl_t ttl);
+bool hashtable_set_ttl(Hashtable* hashtable, const char* key, const char* value, ttl_t ttl);
 
 char* hashtable_get(const Hashtable* hashtable, const char* key);
 

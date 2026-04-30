@@ -234,6 +234,7 @@ void handle_client(int connection) {
                 perror("Unimplemented");
         }
 
+        freeCommand(&command);
     }
     // Command was too long
     else if (bytes > MAX_LINE_LEN) {
