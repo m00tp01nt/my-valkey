@@ -2,7 +2,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Launch",
+            "name": "Debug",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/kvserver",
@@ -12,7 +12,38 @@
                 "10"
             ],
             "stopAtEntry": false,
-            "preLaunchTask": "make",
+            "preLaunchTask": "make_server",
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Set Disassembly Flavor to Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
+            "name": "Benchmark",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/bench_client",
+            "args": [
+                "localhost",
+                "6379",
+                "4",
+                "10",
+                "50"
+            ],
+            "stopAtEntry": false,
+            "preLaunchTask": "make_benchmark",
             "cwd": "${workspaceFolder}",
             "environment": [],
             "externalConsole": false,
@@ -30,5 +61,6 @@
                 }
             ]
         }
+
     ]
 }

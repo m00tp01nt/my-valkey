@@ -8,11 +8,12 @@
 #include <stdio.h>
 
 #include "../util/bool.h"
+#include "../util/logger.h"
+
 #include "../kv.h"
 
 #include "command.h"
 #include "operation.h"
-#include "parse.h"
 #include "problem.h"
 
 typedef struct Tokens {
@@ -26,6 +27,7 @@ typedef struct Tokens {
 bool hasCorrectTermination(const char* input);
 Tokens tokenize(const char* input);
 bool argumentsAreValid(Command* command);
+void freeTokens(Tokens* tokens);
 
 Command parseInput(const char* input) {
     
@@ -60,9 +62,9 @@ Command parseInput(const char* input) {
                 result.problem = I_PROBLEM_TOO_FEW_ARGS " | " O_GET_USAGE;
                 break;
             }
-            
-            result.operation = GET;
-            result.key = tokens.tokens[1];
+
+            result.key = strdup(tokens.tokens[1]);
+
             break;
 
         case PUT:
@@ -75,9 +77,10 @@ Command parseInput(const char* input) {
                 break;
             }
 
-            result.key = tokens.tokens[1];
-            result.value = tokens.tokens[2];
-            if (arguments == 3) result.ttl = (int) strtoul(tokens.tokens[3], NULL, 10);
+            result.key = strdup(tokens.tokens[1]);
+            result.value = strdup(tokens.tokens[2]);
+
+            result.ttl = (arguments == 3) ? (ttl_t) strtoul(tokens.tokens[3], NULL, 10) : 0;
             break;
 
         case DEL:
@@ -90,8 +93,7 @@ Command parseInput(const char* input) {
                 break;
             }
 
-            result.key = tokens.tokens[1];
-
+            result.key = strdup(tokens.tokens[1]);
             break;
 
         case STATS:
@@ -120,6 +122,10 @@ Command parseInput(const char* input) {
             result.problem = I_PROBLEM_UNKNOWN_OPERATION;
     }
 
+    freeTokens(&tokens);
+
+    result.operation = operation;
+
     if (result.problem != NULL) return result;
 
     if (!argumentsAreValid(&result)) return result;
@@ -127,9 +133,14 @@ Command parseInput(const char* input) {
     return result;
 }
 
+void freeCommand(Command *command) {
+    if (command->key != NULL) free(command->key);
+    if (command->value != NULL) free(command->value);
+}
+
 bool hasCorrectTermination(const char* input) {
 
-    char* lastTermination = strchr(input, I_TERMINATOR);
+    char* lastTermination = strrchr(input, I_TERMINATOR);
 
     if (lastTermination == NULL)
         return false;
@@ -176,13 +187,13 @@ Tokens tokenize(const char* input) {
 
         // Walk backwards until hitting the next delimiter
         int tokenLength = 0;
-        int tokenStartIndex = delimiter[i];
+        int tokenStartIndex = delimiter[i] - 1;
         
-        while (tokenStartIndex >= 0 && input[--tokenStartIndex] != I_DELIMITER) 
+        while (tokenStartIndex >= 0 && input[tokenStartIndex] != I_DELIMITER) {
             tokenLength++;
-
+            tokenStartIndex--;
+        }
         tokenStartIndex++;
-        tokenLength--;
 
         char* token = (char*) malloc((tokenLength + 1) * sizeof(char));
 
@@ -196,7 +207,20 @@ Tokens tokenize(const char* input) {
     return tokens;
 }
 
+void freeTokens(Tokens* tokens) {
+    for (int i = 0; i < tokens->tokenCount; i++)
+        free(tokens->tokens[i]);
+    
+    free(tokens->tokens);
+}
+
 bool argumentsAreValid(Command* command) {
+
+    if (
+        command->operation == STATS || 
+        command->operation == QUIT
+    ) 
+        return true;
 
     bool problem;
 
@@ -206,12 +230,21 @@ bool argumentsAreValid(Command* command) {
         return false;
     }
 
-    problem = strnlen(command->key, MAX_VAL_LEN + 1) == MAX_VAL_LEN + 1 ? true : false;
+    if (
+        command->operation == GET ||
+        command->operation == DEL
+    )
+        return true;
+
+    problem = strnlen(command->value, MAX_VAL_LEN + 1) == MAX_VAL_LEN + 1 ? true : false;
     if (problem) {
         command->problem = I_PROBLEM_VAL_TOO_LONG;
         return false;
     }
 
+    if (command->ttl == 0)
+        return true;
+    
     problem = (command->ttl > MAX_TTL) ? true : false;
     if (problem) {
         command->problem = I_PROBLEM_TTL_TOO_LARGE;

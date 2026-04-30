@@ -5,29 +5,21 @@
 
 typedef enum Response {
 
-    NOT_FOUND,
-    VALUE,
-    OK,
-    STATS,
-    BYE,
+    RES_ERROR,
+    RES_VALUE,
+    RES_NOT_FOUND,
+    RES_OK,
+    RES_STATS,
+    RES_BYE,
 
 } Response;
 
-char* responseToString(const Response response) {
+typedef struct Result {
 
-    switch (response) {
+    Response response;
 
-        case NOT_FOUND: return "NOT_FOUND";
+    char* message;
 
-        case VALUE: return "VALUE";
-        
-        case OK: return "OK";
+} Result;
 
-        case STATS: return "STATS";
-
-        case BYE: return "BYE";
-        
-        default: perror("Unknown response");
-    }
-
-}
+char* generateResponseString(const Result result);

@@ -33,10 +33,10 @@
 // Tighter max line length
 #define MAX_LINE_LEN        (MAX_OPERATION_LEN + MAX_KEY_LEN + MAX_VAL_LEN + MAX_TTL_LEN + MAX_SPACE_COUNT + 64)
 
-/* Response strings. Each response is one line ending in '\n'. */
-#define RESP_OK        "OK\n"
-#define RESP_BYE       "BYE\n"
-#define RESP_NOTFOUND  "NOT_FOUND\n"
+// Response
+#define RESPONSE_EPILOGUE_C '\n'
+#define RESPONSE_EPILOGUE_S "\n"
+#define MAX_RESPONSE_BODY_LENGTH 128
 
 // Operation usage
 #define O_USAGE_PREAMBLE "Usage: "

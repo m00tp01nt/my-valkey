@@ -10,7 +10,8 @@
 CC      = gcc
 CFLAGS  = -Wall -Wextra -Wpedantic -g -pthread
 CFLAGS  += -Wswitch
-CFLAGS  += -Wswitch
+# CFLAGS  += -Wwrite-strings
+CFLAGS + -Wcast-qual
 # CFLAGS  += -O2
 CFLAGS  += -O0
 
@@ -18,14 +19,13 @@ LDFLAGS = -pthread
 
 SERVER_SRCS = src/kvserver.c
 
-# Hashtable
 SERVER_SRCS += src/hashtable/hashtable.c
-
-# Input
 SERVER_SRCS += src/input/input.c
 SERVER_SRCS += src/input/operation.c
+SERVER_SRCS += src/response/response.c
+SERVER_SRCS += src/util/logger.c
 
-BENCH_SRCS  = bench_client.c
+BENCH_SRCS  = benchmark/bench_client.c
 
 SERVER_BIN = kvserver
 BENCH_BIN  = bench_client

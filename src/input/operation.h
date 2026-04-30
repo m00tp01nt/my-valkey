@@ -19,3 +19,5 @@ typedef enum Operation {
 } Operation;
 
 Operation stringToOperation(const char* input);
+
+const char* operationToString(Operation operation);
