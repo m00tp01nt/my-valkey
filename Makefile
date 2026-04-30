@@ -10,8 +10,8 @@
 CC      = gcc
 CFLAGS  = -Wall -Wextra -Wpedantic -g -pthread
 CFLAGS  += -Wswitch
-# CFLAGS  += -Wwrite-strings
-CFLAGS + -Wcast-qual
+CFLAGS  += -Wwrite-strings
+CFLAGS  += -Wcast-qual
 # CFLAGS  += -O2
 CFLAGS  += -O0
 
