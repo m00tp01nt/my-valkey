@@ -23,3 +23,6 @@ typedef struct Result {
 } Result;
 
 char* generateResponseString(const Result result);
+
+// OK to pass by value since we're only passing 
+void freeResult(Result result);

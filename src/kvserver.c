@@ -127,16 +127,13 @@ int main(int argc, char **argv) {
         port, num_workers, num_buckets, sweeper_ms);
 
     while (!g_shutdown) {
-        while (!g_shutdown) {
-            int conn = accept(listen_fd, NULL, NULL);
-            if (conn < 0) {
+        int conn = accept(listen_fd, NULL, NULL);
+        if (conn < 0) {
 
-                // ...handle EINTR on signal, else perror...
+            // ...handle EINTR on signal, else perror...
 
-            }
-            handle_client(conn);
-            close(conn);
         }
+        handle_client(conn);
     }
 
     hashtable_destroy(hashtable);
@@ -175,14 +172,17 @@ void handle_client(int connection) {
     // Command wasn't too long
     if (bytes < MAX_LINE_LEN) {
 
-        buffer[MAX_LINE_LEN] = '\0';
+        buffer[bytes] = '\0';
 
         Command command = parseInput(buffer);
 
         logCommand(&command);
 
-        if (command.problem != NULL) {
-            perror(command.problem);
+        if (command.result.response == RES_ERROR) {
+            char* response = generateResponseString(command.result);
+            write(connection, response, strlen(response));
+            free(response);
+            freeCommand(&command);
             return;
         }
 
@@ -204,12 +204,12 @@ void handle_client(int connection) {
             
             case PUT:
                 {
-                    bool result = hashtable_set(hashtable, command.key, command.value);
+                    bool result = hashtable_put(hashtable, command.key, command.value);
                     if (result == false) {
                         command.result.response = RES_ERROR;
                     }
                     else {
-                        command.result.response = R_OK;
+                        command.result.response = RES_OK;
                     }
                     command.result.message = NULL;
                 }
@@ -222,7 +222,7 @@ void handle_client(int connection) {
                         command.result.response = RES_NOT_FOUND;
                     }
                     else {
-                        command.result.response = R_OK;
+                        command.result.response = RES_OK;
                     }
                     command.result.message = NULL;
                 }
@@ -234,6 +234,9 @@ void handle_client(int connection) {
                 perror("Unimplemented");
         }
 
+        char* response = generateResponseString(command.result);
+        write(connection, response, strlen(response));
+        free(response);
         freeCommand(&command);
     }
     // Command was too long
@@ -252,5 +255,6 @@ void handle_client(int connection) {
         return;
     }
 
+    close(connection);
     free(buffer);
 }

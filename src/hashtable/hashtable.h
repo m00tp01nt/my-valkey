@@ -19,14 +19,14 @@ typedef struct {
 // Functions
 Hashtable* hashtable_create(int bucketCount);
 
-bool hashtable_set(Hashtable* hashtable, const char* key, const char* value);
+bool hashtable_put(Hashtable* hashtable, const char* key, const char* value);
 
-bool hashtable_set_ttl(Hashtable* hashtable, const char* key, const char* value, ttl_t ttl);
+bool hashtable_put_ttl(Hashtable* hashtable, const char* key, const char* value, ttl_t ttl);
 
-char* hashtable_get(const Hashtable* hashtable, const char* key);
+char* hashtable_get(Hashtable* hashtable, const char* key);
 
-bool hashtable_delete(const Hashtable* hashtable, const char* key);
+bool hashtable_delete(Hashtable* hashtable, const char* key);
 
 bool hashtable_destroy(Hashtable* hashtable);
 
-HashtableStatistics* hashtable_get_statistics(const Hashtable* hashtable);
+HashtableStatistics hashtable_get_statistics(const Hashtable* hashtable);

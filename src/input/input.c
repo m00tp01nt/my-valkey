@@ -33,21 +33,25 @@ Command parseInput(const char* input) {
     
     Command result = {0};
 
-    result.problem = NULL;
+    result.result.response = RES_OK;
+    result.result.message = NULL;
 
     if (!hasCorrectTermination(input)) {
-        result.problem = I_PROBLEM_BAD_TERMINATION;
+        result.result.response = RES_ERROR;
+        result.result.message = strdup(I_PROBLEM_BAD_TERMINATION);
         return result;
     }
     
     Tokens tokens = tokenize(input);
 
     if (tokens.tokenCount > MAX_TOKEN_COUNT) {
-        result.problem = I_PROBLEM_TOO_MANY_ARGS;
+        result.result.response = RES_ERROR;
+        result.result.message = strdup(I_PROBLEM_TOO_MANY_ARGS);
         return result;
     }
 
     Operation operation = stringToOperation(tokens.tokens[0]);
+    result.operation = operation;
 
     int arguments = tokens.tokenCount - 1;
 
@@ -55,11 +59,13 @@ Command parseInput(const char* input) {
 
         case GET:
             if (arguments > O_GET_MAX_ARGS) {
-                result.problem = I_PROBLEM_TOO_MANY_ARGS " | " O_GET_USAGE;
+                result.result.response = RES_ERROR;
+                result.result.message = strdup(I_PROBLEM_TOO_MANY_ARGS " | " O_GET_USAGE);
                 break;
             }
             if (arguments < O_GET_MIN_ARGS) {
-                result.problem = I_PROBLEM_TOO_FEW_ARGS " | " O_GET_USAGE;
+                result.result.response = RES_ERROR;
+                result.result.message = strdup(I_PROBLEM_TOO_FEW_ARGS " | " O_GET_USAGE);
                 break;
             }
 
@@ -69,11 +75,13 @@ Command parseInput(const char* input) {
 
         case PUT:
             if (arguments > O_PUT_MAX_ARGS) {
-                result.problem = I_PROBLEM_TOO_MANY_ARGS " | " O_PUT_USAGE;
+                result.result.response = RES_ERROR;
+                result.result.message = strdup(I_PROBLEM_TOO_MANY_ARGS " | " O_PUT_USAGE);
                 break;
             }
             if (arguments < O_PUT_MIN_ARGS) {
-                result.problem = I_PROBLEM_TOO_FEW_ARGS " | " O_PUT_USAGE;
+                result.result.response = RES_ERROR;
+                result.result.message = strdup(I_PROBLEM_TOO_FEW_ARGS " | " O_PUT_USAGE);
                 break;
             }
 
@@ -85,11 +93,13 @@ Command parseInput(const char* input) {
 
         case DEL:
             if (arguments > O_DEL_MAX_ARGS) {
-                result.problem = I_PROBLEM_TOO_MANY_ARGS " | " O_DEL_USAGE;
+                result.result.response = RES_ERROR;
+                result.result.message = strdup(I_PROBLEM_TOO_MANY_ARGS " | " O_DEL_USAGE);
                 break;
             }
             if (arguments < O_DEL_MIN_ARGS) {
-                result.problem = I_PROBLEM_TOO_FEW_ARGS " | " O_DEL_USAGE;
+                result.result.response = RES_ERROR;
+                result.result.message = strdup(I_PROBLEM_TOO_FEW_ARGS " | " O_DEL_USAGE);
                 break;
             }
 
@@ -98,37 +108,36 @@ Command parseInput(const char* input) {
 
         case STATS:
             if (arguments > O_STATS_MAX_ARGS) {
-                result.problem = I_PROBLEM_TOO_MANY_ARGS " | " O_STATS_USAGE;
+                result.result.response = RES_ERROR;
+                result.result.message = strdup(I_PROBLEM_TOO_MANY_ARGS " | " O_STATS_USAGE);
                 break;
             }
             if (arguments < O_STATS_MIN_ARGS) {
-                result.problem = I_PROBLEM_TOO_FEW_ARGS " | " O_STATS_USAGE;
+                result.result.response = RES_ERROR;
+                result.result.message = strdup(I_PROBLEM_TOO_FEW_ARGS " | " O_STATS_USAGE);
                 break;
             }
             break;
 
         case QUIT:
             if (arguments > O_QUIT_MAX_ARGS) {
-                result.problem = I_PROBLEM_TOO_MANY_ARGS " | " O_QUIT_USAGE;
+                result.result.response = RES_ERROR;
+                result.result.message = strdup(I_PROBLEM_TOO_MANY_ARGS " | " O_QUIT_USAGE);
                 break;
             }
             if (arguments < O_QUIT_MIN_ARGS) {
-                result.problem = I_PROBLEM_TOO_FEW_ARGS " | " O_QUIT_USAGE;
+                result.result.response = RES_ERROR;
+                result.result.message = strdup(I_PROBLEM_TOO_FEW_ARGS " | " O_QUIT_USAGE);
                 break;
             }
             break;
 
         case UNKNOWN:
-            result.problem = I_PROBLEM_UNKNOWN_OPERATION;
+            result.result.response = RES_ERROR;
+            result.result.message = strdup(I_PROBLEM_UNKNOWN_OPERATION);
     }
 
     freeTokens(&tokens);
-
-    result.operation = operation;
-
-    if (result.problem != NULL) return result;
-
-    if (!argumentsAreValid(&result)) return result;
 
     return result;
 }
@@ -136,6 +145,7 @@ Command parseInput(const char* input) {
 void freeCommand(Command *command) {
     if (command->key != NULL) free(command->key);
     if (command->value != NULL) free(command->value);
+    freeResult(command->result);
 }
 
 bool hasCorrectTermination(const char* input) {
@@ -226,7 +236,8 @@ bool argumentsAreValid(Command* command) {
 
     problem = strnlen(command->key, MAX_KEY_LEN + 1) == MAX_KEY_LEN + 1 ? true : false;
     if (problem) {
-        command->problem = I_PROBLEM_KEY_TOO_LONG;
+        command->result.response = RES_ERROR;
+        command->result.message = strdup(I_PROBLEM_KEY_TOO_LONG);
         return false;
     }
 
@@ -238,7 +249,8 @@ bool argumentsAreValid(Command* command) {
 
     problem = strnlen(command->value, MAX_VAL_LEN + 1) == MAX_VAL_LEN + 1 ? true : false;
     if (problem) {
-        command->problem = I_PROBLEM_VAL_TOO_LONG;
+        command->result.response = RES_ERROR;
+        command->result.message = strdup(I_PROBLEM_VAL_TOO_LONG);
         return false;
     }
 
@@ -247,7 +259,8 @@ bool argumentsAreValid(Command* command) {
     
     problem = (command->ttl > MAX_TTL) ? true : false;
     if (problem) {
-        command->problem = I_PROBLEM_TTL_TOO_LARGE;
+        command->result.response = RES_ERROR;
+        command->result.message = strdup(I_PROBLEM_TTL_TOO_LARGE);
         return false;
     }
 

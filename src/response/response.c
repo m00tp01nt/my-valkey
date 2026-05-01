@@ -48,3 +48,8 @@ char* generateResponseString(const Result result) {
     
     return responseString;
 }
+
+void freeResult(Result result) {
+    if (result.message != NULL)
+        free(result.message);
+}

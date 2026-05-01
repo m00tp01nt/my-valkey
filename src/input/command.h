@@ -14,7 +14,7 @@ typedef struct Command {
 
     ttl_t ttl;
 
-    const char* problem;
+    // const char* problem;
 
     Result result;
 

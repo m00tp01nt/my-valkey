@@ -21,13 +21,13 @@ typedef struct HashtableEntry {
     char* key;
     char* value;
     struct HashtableEntry* next;
+    struct HashtableEntry* previous;
 
 } HashtableEntry;
 
 typedef struct Hashtable {
 
     float loadFactor;
-    int bucketCount;
 
     HashtableEntry** buckets;
 
@@ -36,6 +36,7 @@ typedef struct Hashtable {
 } Hashtable;
 
 int hash(const char* key, const int bucketCount);
+HashtableEntry* hashtable_get_entry(const Hashtable* hashtable, const char* key);
 void hashtable_free_entry(HashtableEntry* hashtableEntry);
 
 Hashtable* hashtable_create(int bucketCount) {
@@ -65,13 +66,13 @@ Hashtable* hashtable_create(int bucketCount) {
     return hashtable;
 }
 
-bool hashtable_set(Hashtable* hashtable, const char *key, const char *value) {
-    return hashtable_set_ttl(hashtable, key, value, 0);
+bool hashtable_put(Hashtable* hashtable, const char *key, const char *value) {
+    return hashtable_put_ttl(hashtable, key, value, 0);
 }
 
-bool hashtable_set_ttl(Hashtable* hashtable, const char *key, const char *value, ttl_t ttl) {
+bool hashtable_put_ttl(Hashtable* hashtable, const char *key, const char *value, ttl_t ttl) {
     
-    int hashValue = hash(key, hashtable->bucketCount);
+    int hashValue = hash(key, hashtable->metadata.buckets);
 
     HashtableEntry* bucketHead = hashtable->buckets[hashValue];
 
@@ -83,6 +84,7 @@ bool hashtable_set_ttl(Hashtable* hashtable, const char *key, const char *value,
         entry->value = strdup(value);
         entry->ttl = ttl;
         entry->next = NULL;
+        entry->previous = NULL;
 
         hashtable->buckets[hashValue] = entry;
 
@@ -92,7 +94,7 @@ bool hashtable_set_ttl(Hashtable* hashtable, const char *key, const char *value,
     }
 
     // Check if key already in table
-    HashtableEntry* entry = hashtable_get_entry(hashtable, key);
+    HashtableEntry* entry = hashtable_get_entry((const Hashtable*) hashtable, key);
     if (entry != NULL) {
         free(entry->value);
         entry->value = strdup(value);
@@ -111,13 +113,14 @@ bool hashtable_set_ttl(Hashtable* hashtable, const char *key, const char *value,
         index = index->next;
 
     index->next = entry;
+    entry->previous = index;
     hashtable->metadata.entries++;
 
     return true;
 }
 
 HashtableEntry* hashtable_get_entry(const Hashtable* hashtable, const char* key) {
-    HashtableEntry* index = hashtable->buckets[hash(key, hashtable->bucketCount)];
+    HashtableEntry* index = hashtable->buckets[hash(key, hashtable->metadata.buckets)];
 
     while (index != NULL) {
         if (!strcmp(index->key, key))
@@ -138,17 +141,42 @@ char* hashtable_get(Hashtable* hashtable, const char *key) {
     }
 
     hashtable->metadata.hits++;
-    return entry->value;
+    return strdup(entry->value);
 }
 
 bool hashtable_delete(Hashtable* hashtable, const char *key) {
-    return false;
+    
+    HashtableEntry* entry = hashtable_get_entry(hashtable, key);
+
+    // Entry isn't in the table
+    if (entry == NULL) return false;
+
+    // Entry is head
+    if (entry->previous == NULL) {
+        hashtable->buckets[hash(key, hashtable->metadata.buckets)] = entry->next;
+
+        // Promote second entry to head
+        if (entry->next != NULL) entry->next->previous = NULL;
+    }
+    // Entry is tail
+    else if (entry->next == NULL) {
+        entry->previous->next = NULL;
+    }
+    else {
+        entry->previous->next = entry->next;
+        entry->next->previous = entry->previous;   
+    }
+
+    hashtable->metadata.entries--;
+    hashtable->metadata.deletes++;
+    
+    hashtable_free_entry(entry);
+    return true;
 }
 
 bool hashtable_destroy(Hashtable* hashtable) {
 
-
-    for (int i = 0; i < hashtable->bucketCount; i++) {
+    for (unsigned int i = 0; i < hashtable->metadata.buckets; i++) {
         HashtableEntry* head = hashtable->buckets[i];
 
         if (hashtable->buckets[i] == NULL) continue;
