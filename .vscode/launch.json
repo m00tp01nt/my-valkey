@@ -8,8 +8,8 @@
             "program": "${workspaceFolder}/kvserver",
             "args": [
                 "6379",
-                "4",
-                "10"
+                "11",
+                "1000"
             ],
             "stopAtEntry": false,
             "preLaunchTask": "make_server",

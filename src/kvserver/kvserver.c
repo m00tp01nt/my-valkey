@@ -22,24 +22,33 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <pthread.h>
 
 #include "input/input.h"
 #include "input/problem.h"
 
 #include "../common/logger.h"
+#include "../common/bool.h"
 
 #include "hashtable/hashtable.h"
+#include "queue/queue.h"
+
+#include "worker/worker.h"
 
 /* -------- Globals ------------------------------------------------------- */
 
-Hashtable* hashtable;
-
 static volatile sig_atomic_t g_shutdown = 0;
-
-void handle_client(int);
 
 static void sigint_handler(int sig) {
     (void)sig;
+
+    printf("Stopping cleanly (Ctrl + C to immeditatly shut down)...\n");
+
+    if (g_shutdown == 1) {
+        printf("Stopped\n");
+        abort();
+    }
+
     g_shutdown = 1;
 }
 
@@ -119,7 +128,27 @@ int main(int argc, char **argv) {
     int listen_fd = make_listen_socket(port);
     if (listen_fd < 0) return 1;
 
+    Queue* queue;
+    Hashtable* hashtable;
+
+    queue = queue_create(1024);
     hashtable = hashtable_create(num_buckets);
+
+    WorkerAguments workerArgs = {
+        .hashtable = hashtable,
+        .queue = queue
+    };
+
+    pthread_t threads[num_workers];
+
+    for (int i = 0; i < num_workers; i++) {
+        pthread_create(
+            &threads[i],
+            NULL,
+            kvserver_work,
+            (void*)(&workerArgs)
+        );
+    }
 
     fprintf(stderr,
         "kvserver: listening on port %d "
@@ -130,13 +159,24 @@ int main(int argc, char **argv) {
         int conn = accept(listen_fd, NULL, NULL);
         if (conn < 0) {
 
-            // ...handle EINTR on signal, else perror...
+            if (errno == EINTR) break;
+            perror("accept");
+            break;
 
         }
-        handle_client(conn);
+        queue_add(queue, (QueueEntry){
+            .fd = conn
+        });
     }
+    close(listen_fd);
+    queue_drain(queue);
+
+    for (int i = 0; i < num_workers; i++)
+        pthread_join(threads[i], NULL);
+    
 
     hashtable_destroy(hashtable);
+    queue_destroy(queue);
 
     /* ================================================================
      * TODO (Stage 1): Sequential accept loop.
@@ -159,100 +199,7 @@ int main(int argc, char **argv) {
      * TODO (shutdown): drain queue, join all threads, free everything.
      * ================================================================ */
 
-    close(listen_fd);
+
+    printf("Stopped\n");
     return 0;
-}
-
-void handle_client(int connection) {
-
-    char* buffer;
-
-    while ((buffer = readLine(connection)) != NULL) {
-        Command command = parseInput(buffer, I_DELIMITER, I_TERMINATOR);
-
-        logCommand(&command);
-
-        if (command.result.response == RES_ERROR) {
-            char* response = generateResponseString(command.result);
-            write(connection, response, strlen(response));
-            free(response);
-            freeCommand(&command);
-            continue;
-        }
-
-        switch (command.operation) {
-            case GET:
-                {
-                    char* value = hashtable_get(hashtable, command.key);
-                    if (value == NULL) {
-                        command.result.response = RES_NOT_FOUND;
-                        command.result.message = NULL;
-                    }
-                    else {
-                        command.result.response = RES_VALUE;
-                        command.result.message = strdup(value);
-                    }
-                    free(value);
-                }
-                break;
-            
-            case PUT:
-                {
-                    bool result = hashtable_put(hashtable, command.key, command.value);
-                    if (result == false) {
-                        command.result.response = RES_ERROR;
-                    }
-                    else {
-                        command.result.response = RES_OK;
-                    }
-                    command.result.message = NULL;
-                }
-                break;
-
-            case DEL:
-                {
-                    bool result = hashtable_delete(hashtable, command.key);
-                    if (result == false) {
-                        command.result.response = RES_NOT_FOUND;
-                    }
-                    else {
-                        command.result.response = RES_OK;
-                    }
-                    command.result.message = NULL;
-                }
-                break;
-
-            case STATS:
-                {
-                    char* stats = hashtable_get_statistics_string(hashtable);
-                    if (stats == NULL) {
-                        command.result.response = RES_ERROR;
-                        command.result.message = NULL;
-                    }
-                    else {
-                        command.result.response = RES_STATS;
-                        command.result.message = strdup(stats);
-                    }
-                    free(stats);
-                }
-                break;
-
-            case QUIT:
-                freeCommand(&command);
-                close(connection);
-                free(buffer);
-                return;
-
-            case UNKNOWN:
-                perror("Unimplemented");
-        }
-
-        char* response = generateResponseString(command.result);
-        write(connection, response, strlen(response));
-        free(response);
-        freeCommand(&command);
-    }
-
-    close(connection);
-    free(buffer);
 }

@@ -1,4 +1,4 @@
-#define _GPU_SOURCE
+#define _GNU_SOURCE
 
 #include "hashtable.h"
 

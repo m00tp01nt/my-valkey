@@ -35,7 +35,6 @@
 #include <time.h>
 
 #include "../common/bool.h"
-#include "worker/args.h"
 #include "worker/worker.h"
 
 static void usage(const char *prog) {

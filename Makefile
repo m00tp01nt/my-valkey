@@ -25,7 +25,9 @@ COMMON_SRCS += src/common/token.c
 
 SERVER_SRCS =  src/kvserver/kvserver.c
 SERVER_SRCS += src/kvserver/hashtable/hashtable.c
+SERVER_SRCS += src/kvserver/queue/queue.c
 SERVER_SRCS += src/kvserver/input/input.c
+SERVER_SRCS += src/kvserver/worker/worker.c
 
 BENCH_SRCS  =  src/benchmark/bench_client.c
 BENCH_SRCS  += src/benchmark/worker/worker.c

@@ -13,7 +13,6 @@
 #include "../../common/command.h"
 #include "../../common/kv.h"
 #include "random.h"
-#include "args.h"
 
 char* generateString(unsigned int*, int);
 Command* generateRead(unsigned int*);

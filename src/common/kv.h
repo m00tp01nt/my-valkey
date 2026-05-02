@@ -79,16 +79,4 @@
  *                 thread function.
  */
 
-/* -------- Function prototypes you will likely want ---------------------- */
-
-/* Protocol / connection handling (Stage 1) */
-void handle_client(int);        /* loop: read line, parse, reply */
-
-/* Hash-table operations (Stage 1, made thread-safe in Stage 3) */
-/*   Return 0 on success, -1 on not-found / error. */
-/*   You design the full signatures -- these are just suggestions. */
-/* int  kv_get(const char *key, char *out_val, size_t out_cap); */
-/* int  kv_put(const char *key, const char *val, int ttl_seconds); */
-/* int  kv_del(const char *key); */
-
 #endif /* KV_H */
