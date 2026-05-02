@@ -17,30 +17,33 @@ CFLAGS  += -O0
 
 LDFLAGS = -pthread
 
-SERVER_SRCS = src/kvserver.c
+COMMON_SRCS =  src/common/operation.c
+COMMON_SRCS += src/common/response.c
+COMMON_SRCS += src/common/logger.c
+COMMON_SRCS += src/common/command.c
+COMMON_SRCS += src/common/token.c
 
-SERVER_SRCS += src/hashtable/hashtable.c
-SERVER_SRCS += src/input/input.c
-SERVER_SRCS += src/input/operation.c
-SERVER_SRCS += src/response/response.c
-SERVER_SRCS += src/util/logger.c
+SERVER_SRCS =  src/kvserver/kvserver.c
+SERVER_SRCS += src/kvserver/hashtable/hashtable.c
+SERVER_SRCS += src/kvserver/input/input.c
 
-BENCH_SRCS  = benchmark/bench_client.c
+BENCH_SRCS  =  src/benchmark/bench_client.c
+BENCH_SRCS  += src/benchmark/worker/worker.c
 
 SERVER_BIN = kvserver
 BENCH_BIN  = bench_client
 
 .PHONY: all bench clean tsan
 
-all: $(SERVER_BIN)
+all: $(SERVER_BIN) $(BENCH_BIN)
 
 bench: $(BENCH_BIN)
 
 $(SERVER_BIN): $(SERVER_SRCS)
-	$(CC) $(CFLAGS) -o $@ $(SERVER_SRCS) $(LDFLAGS)
+	$(CC) $(CFLAGS) -o $@ $(COMMON_SRCS) $(SERVER_SRCS) $(LDFLAGS)
 
 $(BENCH_BIN): $(BENCH_SRCS)
-	$(CC) $(CFLAGS) -o $@ $(BENCH_SRCS) $(LDFLAGS)
+	$(CC) $(CFLAGS) -o $@ $(COMMON_SRCS) $(BENCH_SRCS) $(LDFLAGS)
 
 # Use this during development of Stage 3 and 4 to catch data races.
 # Run the server normally -- TSan reports races on stderr.

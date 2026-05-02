@@ -1,16 +1,15 @@
+#define _GPU_SOURCE
+
 #include "hashtable.h"
 
 #include <string.h>
-
-// malloc()
 #include <stdlib.h>
-
-// perror()
 #include <stdio.h>
+#include <time.h>
 
-#include "../kv.h"
+#include "../../common/kv.h"
 
-#include "../util/ttl.h"
+#include "../../common/ttl.h"
 
 #define HASHTABLE_INITIAL_SIZE 5
 #define HASHTABLE_DEFAULT_LOAD_FACTOR 0.75
@@ -55,13 +54,14 @@ Hashtable* hashtable_create(int bucketCount) {
         return NULL;
     }
 
+    hashtable->buckets = buckets;
+
     hashtable->metadata.entries = 0;
     hashtable->metadata.hits = 0;
     hashtable->metadata.misses = 0;
     hashtable->metadata.deletes = 0;
     hashtable->metadata.buckets = bucketCount;
-
-    hashtable->buckets = buckets;
+    hashtable->metadata.creationTime = time(NULL);
 
     return hashtable;
 }
@@ -89,6 +89,7 @@ bool hashtable_put_ttl(Hashtable* hashtable, const char *key, const char *value,
         hashtable->buckets[hashValue] = entry;
 
         hashtable->metadata.entries++;
+        hashtable->metadata.puts++;
 
         return true;
     }
@@ -98,6 +99,7 @@ bool hashtable_put_ttl(Hashtable* hashtable, const char *key, const char *value,
     if (entry != NULL) {
         free(entry->value);
         entry->value = strdup(value);
+        hashtable->metadata.puts++;
         return true;
     }
 
@@ -114,7 +116,9 @@ bool hashtable_put_ttl(Hashtable* hashtable, const char *key, const char *value,
 
     index->next = entry;
     entry->previous = index;
+
     hashtable->metadata.entries++;
+    hashtable->metadata.puts++;
 
     return true;
 }
@@ -200,6 +204,27 @@ bool hashtable_destroy(Hashtable* hashtable) {
 
 HashtableStatistics hashtable_get_statistics(const Hashtable *hashtable) {
     return hashtable->metadata;
+}
+
+char* hashtable_get_statistics_string(const Hashtable *hashtable) {
+    HashtableStatistics stats = hashtable_get_statistics(hashtable);
+
+    char* statsAsString;
+
+    long long uptime = (time(NULL) - stats.creationTime);
+
+    asprintf(
+        &statsAsString,
+        "keys=%d misses=%d puts=%d dels=%d active_conns=%d uptime_s=%lld",
+            stats.entries,
+            stats.misses,
+            stats.puts,
+            stats.deletes,
+            -1,
+            (long long) uptime
+    );
+
+    return statsAsString;
 }
 
 // djb2 hash function

@@ -23,12 +23,10 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "kv.h"
-
 #include "input/input.h"
 #include "input/problem.h"
 
-#include "util/logger.h"
+#include "../common/logger.h"
 
 #include "hashtable/hashtable.h"
 
@@ -37,6 +35,8 @@
 Hashtable* hashtable;
 
 static volatile sig_atomic_t g_shutdown = 0;
+
+void handle_client(int);
 
 static void sigint_handler(int sig) {
     (void)sig;
@@ -165,16 +165,10 @@ int main(int argc, char **argv) {
 
 void handle_client(int connection) {
 
-    char* buffer = (char*)calloc(MAX_LINE_LEN, sizeof(char));
+    char* buffer;
 
-    ssize_t bytes = read(connection, buffer, MAX_LINE_LEN);
-
-    // Command wasn't too long
-    if (bytes < MAX_LINE_LEN) {
-
-        buffer[bytes] = '\0';
-
-        Command command = parseInput(buffer);
+    while ((buffer = readLine(connection)) != NULL) {
+        Command command = parseInput(buffer, I_DELIMITER, I_TERMINATOR);
 
         logCommand(&command);
 
@@ -183,7 +177,7 @@ void handle_client(int connection) {
             write(connection, response, strlen(response));
             free(response);
             freeCommand(&command);
-            return;
+            continue;
         }
 
         switch (command.operation) {
@@ -228,8 +222,27 @@ void handle_client(int connection) {
                 }
                 break;
 
-            case QUIT:
             case STATS:
+                {
+                    char* stats = hashtable_get_statistics_string(hashtable);
+                    if (stats == NULL) {
+                        command.result.response = RES_ERROR;
+                        command.result.message = NULL;
+                    }
+                    else {
+                        command.result.response = RES_STATS;
+                        command.result.message = strdup(stats);
+                    }
+                    free(stats);
+                }
+                break;
+
+            case QUIT:
+                freeCommand(&command);
+                close(connection);
+                free(buffer);
+                return;
+
             case UNKNOWN:
                 perror("Unimplemented");
         }
@@ -238,21 +251,6 @@ void handle_client(int connection) {
         write(connection, response, strlen(response));
         free(response);
         freeCommand(&command);
-    }
-    // Command was too long
-    else if (bytes > MAX_LINE_LEN) {
-        perror(I_PROBLEM_INPUT_TOO_LONG);
-        return;
-    }
-    // Unexpected EOF
-    else if (bytes == 0) {
-        perror(I_PROBLEM_IO);
-        return;
-    }
-    // Error reading from socket
-    else {
-        perror(I_PROBLEM_IO);
-        return;
     }
 
     close(connection);

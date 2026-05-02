@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "../kv.h"
+#include "kv.h"
 
 const char* responseToString(const Response response) {
 

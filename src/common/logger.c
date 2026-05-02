@@ -2,7 +2,7 @@
 
 #include <stdio.h>
 
-#include "../input/operation.h"
+#include "operation.h"
 
 void logCommand(const Command *command) {
 

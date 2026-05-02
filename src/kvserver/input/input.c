@@ -6,30 +6,22 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <unistd.h>
 
-#include "../util/bool.h"
-#include "../util/logger.h"
+#include "../../common/bool.h"
+#include "../../common/logger.h"
 
-#include "../kv.h"
+#include "../../common/kv.h"
 
-#include "command.h"
-#include "operation.h"
+#include "../../common/command.h"
+#include "../../common/operation.h"
+#include "../../common/token.h"
 #include "problem.h"
 
-typedef struct Tokens {
-
-    int tokenCount;
-
-    char** tokens;
-
-} Tokens;
-
 bool hasCorrectTermination(const char* input);
-Tokens tokenize(const char* input);
 bool argumentsAreValid(Command* command);
-void freeTokens(Tokens* tokens);
 
-Command parseInput(const char* input) {
+Command parseInput(const char* input, char delimiter, char terminator) {
     
     Command result = {0};
 
@@ -42,7 +34,7 @@ Command parseInput(const char* input) {
         return result;
     }
     
-    Tokens tokens = tokenize(input);
+    Tokens tokens = tokenize(input, delimiter, terminator);
 
     if (tokens.tokenCount > MAX_TOKEN_COUNT) {
         result.result.response = RES_ERROR;
@@ -142,10 +134,32 @@ Command parseInput(const char* input) {
     return result;
 }
 
-void freeCommand(Command *command) {
-    if (command->key != NULL) free(command->key);
-    if (command->value != NULL) free(command->value);
-    freeResult(command->result);
+char* readLine(int fd) {
+
+    char* buffer = (char*) malloc((MAX_LINE_LEN + 1) * sizeof(char));
+
+    // Adapted from Claude
+    int i = 0;
+    char c;
+    while (i < MAX_LINE_LEN) {
+        ssize_t n = read(fd, &c, 1);
+        if (n <= 0){
+            free(buffer);
+            return NULL;
+        }
+        buffer[i++] = c;
+        if (c == '\n') break;
+    }
+
+    if (i == MAX_LINE_LEN) {
+        free(buffer);
+        return NULL;
+    }
+    buffer[i] = '\0';
+
+    char* line = strdup(buffer);
+    free(buffer);
+    return line;
 }
 
 bool hasCorrectTermination(const char* input) {
@@ -161,67 +175,6 @@ bool hasCorrectTermination(const char* input) {
         return true;
 
     return false;
-}
-
-Tokens tokenize(const char* input) {
-
-    Tokens tokens = {0};
-
-    tokens.tokenCount = 0;
-
-    int delimiter[MAX_LINE_LEN >> 1];
-
-    char item;
-
-    // Grab the delimiter at the end of each token
-    for (int i = 0; i < MAX_LINE_LEN; i++) {
-
-        item = input[i];
-
-        if (item == I_DELIMITER || item == I_TERMINATOR) {
-
-            // Let multiple spaces count as one space
-            if (i == 0 && item == I_DELIMITER) continue;
-            if (i > 0 && input[i - 1] == I_DELIMITER) {}
-            else
-                delimiter[tokens.tokenCount++] = i;
-        }
-
-        if (item == I_TERMINATOR) break;
-    }
-
-    tokens.tokens = (char**) malloc(tokens.tokenCount * sizeof(char*));
-
-    // Copy the tokens into new strings
-    for (int i = 0; i < tokens.tokenCount; i++) {
-
-        // Walk backwards until hitting the next delimiter
-        int tokenLength = 0;
-        int tokenStartIndex = delimiter[i] - 1;
-        
-        while (tokenStartIndex >= 0 && input[tokenStartIndex] != I_DELIMITER) {
-            tokenLength++;
-            tokenStartIndex--;
-        }
-        tokenStartIndex++;
-
-        char* token = (char*) malloc((tokenLength + 1) * sizeof(char));
-
-        memcpy(token, input + tokenStartIndex, tokenLength);
-
-        token[tokenLength] = '\0';
-
-        tokens.tokens[i] = token;
-    }
-
-    return tokens;
-}
-
-void freeTokens(Tokens* tokens) {
-    for (int i = 0; i < tokens->tokenCount; i++)
-        free(tokens->tokens[i]);
-    
-    free(tokens->tokens);
 }
 
 bool argumentsAreValid(Command* command) {

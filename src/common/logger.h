@@ -1,5 +1,5 @@
 #pragma once
 
-#include "../input/command.h"
+#include "command.h"
 
 void logCommand(const Command* command);

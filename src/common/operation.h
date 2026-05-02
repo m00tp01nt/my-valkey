@@ -1,8 +1,5 @@
 #pragma once
 
-// MAX_
-#include "../kv.h"
-
 // strncmp()
 #include <string.h>
 

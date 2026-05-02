@@ -24,5 +24,7 @@ typedef struct Result {
 
 char* generateResponseString(const Result result);
 
+Response stringToResponse(const char* input);
+
 // OK to pass by value since we're only passing 
 void freeResult(Result result);

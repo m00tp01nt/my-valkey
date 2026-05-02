@@ -1,8 +1,8 @@
 #pragma once
 
 #include "operation.h"
-#include "../util/ttl.h"
-#include "../response/response.h"
+#include "ttl.h"
+#include "response.h"
 
 typedef struct Command {
 
@@ -14,8 +14,9 @@ typedef struct Command {
 
     ttl_t ttl;
 
-    // const char* problem;
-
     Result result;
 
 } Command;
+
+char* commandToString(const Command* command);
+void freeCommand(Command* command);

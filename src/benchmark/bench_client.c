@@ -25,9 +25,18 @@
  *     per command.
  */
 
+#define _POSIX_C_SOURCE 200809L
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <pthread.h>
+#include <unistd.h>
+#include <time.h>
+
+#include "../common/bool.h"
+#include "worker/args.h"
+#include "worker/worker.h"
 
 static void usage(const char *prog) {
     fprintf(stderr,
@@ -53,7 +62,44 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    (void)host;  /* silence warnings until you implement */
+    unsigned int baseSeed = rand();
+
+    WorkerArguments arguments[num_clients];
+    pthread_t threads[num_clients];
+
+    for (int i = 0; i < num_clients; i++) {    
+        arguments[i].host = host;
+        arguments[i].port = port;
+        arguments[i].readPercent = read_pct;
+        arguments[i].totalOperations = ops_per_client;
+        arguments[i].seed = baseSeed + i;
+    }
+
+    struct timespec start, end;
+    
+    printf("\n");
+    printf("Running...");
+
+    clock_gettime(CLOCK_MONOTONIC, &start);
+
+    for (int i = 0; i < num_clients; i++) 
+        pthread_create(&threads[i], NULL, stress_test, &arguments[i]);
+
+    for (int i = 0; i < num_clients; i++) 
+        pthread_join(threads[i], NULL);
+    
+    clock_gettime(CLOCK_MONOTONIC, &end);
+
+    double elapsed = (end.tv_sec - start.tv_sec) +
+                    (end.tv_nsec - start.tv_nsec) / 1e9;
+    
+    printf("Done\n");
+    printf("\n");
+    printf("Results:\n");
+    printf("\tTotal Time: %lf sec\n", elapsed);
+    printf("\tTotal Operations: %d\n", (num_clients * ops_per_client));
+    printf("\tOperations per Second: %lf\n", (num_clients * ops_per_client) / elapsed);
+    printf("\n");
 
     /* TODO:
      *   1. Spawn num_clients pthreads.
@@ -63,6 +109,5 @@ int main(int argc, char **argv) {
      *   4. Compute and print total elapsed time and total ops/sec.
      */
 
-    fprintf(stderr, "bench_client: not implemented yet\n");
     return 0;
 }

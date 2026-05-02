@@ -1,7 +1,9 @@
 #pragma once
 
-#include "../util/bool.h"
-#include "../util/ttl.h"
+#include <time.h>
+
+#include "../../common/bool.h"
+#include "../../common/ttl.h"
 
 // Types
 typedef struct Hashtable Hashtable;
@@ -10,9 +12,12 @@ typedef struct {
 
     unsigned int entries;
     unsigned int misses;
+    unsigned int puts;
     unsigned int hits;
     unsigned int deletes;
     unsigned int buckets;
+
+    time_t creationTime;
 
 } HashtableStatistics;
 
@@ -30,3 +35,5 @@ bool hashtable_delete(Hashtable* hashtable, const char* key);
 bool hashtable_destroy(Hashtable* hashtable);
 
 HashtableStatistics hashtable_get_statistics(const Hashtable* hashtable);
+
+char* hashtable_get_statistics_string(const Hashtable* hashtable);
