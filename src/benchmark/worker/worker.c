@@ -14,9 +14,18 @@
 #include "../../common/kv.h"
 #include "random.h"
 
-char* generateString(unsigned int*, int);
-Command* generateRead(unsigned int*);
-Command* generateWrite(unsigned int*);
+#define BENCH_OPERATION_LENGTH 3
+#define BENCH_STRING_LENGTH 3
+
+#define READ_TRANSMISSION_LENGTH (BENCH_OPERATION_LENGTH + 1 + BENCH_STRING_LENGTH + 1)
+#define WRITE_TRANSMISSION_LENGTH (BENCH_OPERATION_LENGTH + 1 + BENCH_STRING_LENGTH + 1 + BENCH_STRING_LENGTH + 1)
+
+#define READ_TEMPLATE "GET    \n"
+#define READ_TEMPLATE_KEY_OFFSET 4
+
+#define WRITE_TEMPLATE "PUT        \n"
+#define WRITE_TEMPLATE_KEY_OFFSET 4
+#define WRITE_TEMPLATE_VALUE_OFFSET 8
 
 void* stress_test(void* args) {
     WorkerArguments* arguments = (WorkerArguments*) args;
@@ -33,53 +42,60 @@ void* stress_test(void* args) {
         return NULL;
     }
 
-    char response[MAX_LINE_LEN];
-    Command* command;
-    char* commandAsString;
+    char* get = strdup(READ_TEMPLATE);
+    char* put = strdup(WRITE_TEMPLATE);
+
+    unsigned int fseed = arguments->seed;
+    unsigned int randStringLength = RANDOM_STRING_LENGTH;
+    unsigned int normalizedReadPercent = (arguments->readPercent / 100.0f) * RAND_MAX;
+
+    unsigned int randomValue;
 
     for (int i = 0; i < arguments->totalOperations; i++) {
 
-        command = (rand_r(&arguments->seed) % 100 < arguments->readPercent)
-                    ? generateRead(&arguments->seed)
-                    : generateWrite(&arguments->seed);
-        
-        commandAsString = commandToString(command);
-        freeCommand(command);
+        randomValue = rand_r(&fseed);
 
-        write(fd, commandAsString, strlen(commandAsString));
-        free(commandAsString);
+        switch (randomValue < normalizedReadPercent)
+        {
+            case 1:
+                memcpy(
+                    get + READ_TEMPLATE_KEY_OFFSET,
+                    &RANDOM_STRING[
+                        randomValue & 0x7FF
+                    ],
+                    BENCH_STRING_LENGTH
+                );
+                write(fd, get, READ_TRANSMISSION_LENGTH);
+                break;
+            
+            case 0:
+                memcpy(
+                    put + WRITE_TEMPLATE_KEY_OFFSET,
+                    &RANDOM_STRING[
+                        randomValue & 0x7FF
+                    ],
+                    BENCH_STRING_LENGTH
+                );
+                memcpy(
+                    put + WRITE_TEMPLATE_VALUE_OFFSET,
+                    &RANDOM_STRING[
+                        (randomValue >> 11) & 0x7FF
+                    ],
+                    BENCH_STRING_LENGTH
+                );
+                write(fd, put, WRITE_TRANSMISSION_LENGTH);
+                break;
+    
+            default:
+        }
 
-        read(fd, response, MAX_LINE_LEN);
+        // Claude
+        char c;
+        while (read(fd, &c, 1) == 1 && c != '\n');
     }
 
+    free(get);
+    free(put);
+
     return NULL;
-}
-
-Command* generateWrite(unsigned int* seed) {
-
-    Command* command = (Command*) malloc(sizeof(Command));
-
-    command->operation = PUT;
-    command->key = generateString(seed, 3);
-    command->value = generateString(seed, 3);
-
-    return command;
-}
-
-Command* generateRead(unsigned int* seed) {
-
-    Command* command = (Command*) malloc(sizeof(Command));
-
-    command->operation = GET;
-    command->key = generateString(seed, 3);
-
-    return command;
-}
-
-char* generateString(unsigned int* seed, int length) {
-
-    if (length > RANDOM_STRING_LENGTH)
-        return NULL;
-    
-    return strndup((const char*)&RANDOM_STRING[rand_r(seed) % (RANDOM_STRING_LENGTH - length)], length);
 }

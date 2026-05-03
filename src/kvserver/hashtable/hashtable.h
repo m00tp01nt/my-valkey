@@ -1,6 +1,7 @@
 #pragma once
 
 #include <time.h>
+#include <stdatomic.h>
 
 #include "../../common/bool.h"
 #include "../../common/ttl.h"
@@ -10,12 +11,12 @@ typedef struct Hashtable Hashtable;
 
 typedef struct {
 
-    unsigned int entries;
-    unsigned int misses;
-    unsigned int puts;
-    unsigned int hits;
-    unsigned int deletes;
-    unsigned int buckets;
+    atomic_uint_fast32_t entries;
+    atomic_uint_fast32_t misses;
+    atomic_uint_fast32_t puts;
+    atomic_uint_fast32_t hits;
+    atomic_uint_fast32_t deletes;
+    atomic_uint_fast32_t buckets;
 
     time_t creationTime;
 

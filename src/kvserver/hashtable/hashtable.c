@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
+#include <pthread.h>
 
 #include "../../common/kv.h"
 
@@ -27,10 +28,10 @@ typedef struct HashtableEntry {
 typedef struct Hashtable {
 
     float loadFactor;
-
     HashtableEntry** buckets;
-
     HashtableStatistics metadata;
+
+    pthread_rwlock_t lock;
 
 } Hashtable;
 
@@ -55,6 +56,7 @@ Hashtable* hashtable_create(int bucketCount) {
     }
 
     hashtable->buckets = buckets;
+    pthread_rwlock_init(&hashtable->lock, NULL);
 
     hashtable->metadata.entries = 0;
     hashtable->metadata.hits = 0;
@@ -71,9 +73,9 @@ bool hashtable_put(Hashtable* hashtable, const char *key, const char *value) {
 }
 
 bool hashtable_put_ttl(Hashtable* hashtable, const char *key, const char *value, ttl_t ttl) {
-    
-    int hashValue = hash(key, hashtable->metadata.buckets);
+    pthread_rwlock_wrlock(&hashtable->lock);
 
+    int hashValue = hash(key, hashtable->metadata.buckets);
     HashtableEntry* bucketHead = hashtable->buckets[hashValue];
 
     // First entry in bucket
@@ -91,6 +93,7 @@ bool hashtable_put_ttl(Hashtable* hashtable, const char *key, const char *value,
         hashtable->metadata.entries++;
         hashtable->metadata.puts++;
 
+        pthread_rwlock_unlock(&hashtable->lock);
         return true;
     }
 
@@ -100,6 +103,8 @@ bool hashtable_put_ttl(Hashtable* hashtable, const char *key, const char *value,
         free(entry->value);
         entry->value = strdup(value);
         hashtable->metadata.puts++;
+
+        pthread_rwlock_unlock(&hashtable->lock);
         return true;
     }
 
@@ -120,22 +125,32 @@ bool hashtable_put_ttl(Hashtable* hashtable, const char *key, const char *value,
     hashtable->metadata.entries++;
     hashtable->metadata.puts++;
 
+    pthread_rwlock_unlock(&hashtable->lock);
     return true;
 }
 
 HashtableEntry* hashtable_get_entry(const Hashtable* hashtable, const char* key) {
+    
+    // Read lock must be acquired before calling this function
+    if (pthread_rwlock_tryrdlock(&hashtable->lock) != 0) 
+        return NULL;
+    
     HashtableEntry* index = hashtable->buckets[hash(key, hashtable->metadata.buckets)];
-
+    
     while (index != NULL) {
-        if (!strcmp(index->key, key))
+        if (!strcmp(index->key, key)) {
+            pthread_rwlock_unlock(&hashtable->lock);
             return index;
+        }
         index = index->next;
     }
-
+    
+    pthread_rwlock_unlock(&hashtable->lock);
     return NULL;
 }
 
 char* hashtable_get(Hashtable* hashtable, const char *key) {
+    pthread_rwlock_rdlock(&hashtable->lock);
 
     HashtableEntry* entry = hashtable_get_entry(hashtable, key);
 
@@ -145,10 +160,13 @@ char* hashtable_get(Hashtable* hashtable, const char *key) {
     }
 
     hashtable->metadata.hits++;
+
+    pthread_rwlock_unlock(&hashtable->lock);
     return strdup(entry->value);
 }
 
 bool hashtable_delete(Hashtable* hashtable, const char *key) {
+    pthread_rwlock_wrlock(&hashtable->lock);
     
     HashtableEntry* entry = hashtable_get_entry(hashtable, key);
 
@@ -175,10 +193,23 @@ bool hashtable_delete(Hashtable* hashtable, const char *key) {
     hashtable->metadata.deletes++;
     
     hashtable_free_entry(entry);
+
+    pthread_rwlock_unlock(&hashtable->lock);
     return true;
 }
 
+HashtableStatistics hashtable_get_statistics(const Hashtable *hashtable) {
+    pthread_rwlock_rdlock(&hashtable->lock);
+
+    HashtableStatistics stats = hashtable->metadata;
+    
+    pthread_rwlock_unlock(&hashtable->lock);
+    return ;
+}
+
 bool hashtable_destroy(Hashtable* hashtable) {
+
+    pthread_rwlock_destroy(&hashtable->lock);
 
     for (unsigned int i = 0; i < hashtable->metadata.buckets; i++) {
         HashtableEntry* head = hashtable->buckets[i];
@@ -196,14 +227,9 @@ bool hashtable_destroy(Hashtable* hashtable) {
     }
 
     free(hashtable->buckets);
-
     free(hashtable);
 
     return true;
-}
-
-HashtableStatistics hashtable_get_statistics(const Hashtable *hashtable) {
-    return hashtable->metadata;
 }
 
 char* hashtable_get_statistics_string(const Hashtable *hashtable) {
