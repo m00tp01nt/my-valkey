@@ -40,8 +40,7 @@
                 "6379",
                 "4",
                 "10",
-                "50",
-                "-s"
+                "50"
             ],
             "stopAtEntry": false,
             "preLaunchTask": "make_benchmark",

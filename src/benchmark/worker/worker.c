@@ -46,7 +46,6 @@ void* stress_test(void* args) {
     char* put = strdup(WRITE_TEMPLATE);
 
     unsigned int fseed = arguments->seed;
-    unsigned int randStringLength = RANDOM_STRING_LENGTH;
     unsigned int normalizedReadPercent = (arguments->readPercent / 100.0f) * RAND_MAX;
 
     unsigned int randomValue;
@@ -55,7 +54,7 @@ void* stress_test(void* args) {
 
         randomValue = rand_r(&fseed);
 
-        switch (randomValue < normalizedReadPercent)
+        switch ((int)(randomValue < normalizedReadPercent))
         {
             case 1:
                 memcpy(
@@ -87,6 +86,7 @@ void* stress_test(void* args) {
                 break;
     
             default:
+                break;
         }
 
         // Claude
