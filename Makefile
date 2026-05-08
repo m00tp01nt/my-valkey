@@ -21,8 +21,8 @@ CFLAGS  += -Wwrite-strings
 CFLAGS  += -Wcast-qual
 
 # My VSCode debugger was saying variables I was trying to watch were optimized out :(
-CFLAGS  += -O2
-# CFLAGS  += -O0
+# CFLAGS  += -O2
+CFLAGS  += -O0
 
 LDFLAGS = -pthread
 
