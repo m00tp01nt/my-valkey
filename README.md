@@ -67,3 +67,16 @@ I though about per entry locking, but decided the added complexity wasn't worth 
 So you could do all that, or just increase the number of buckets and have close to the same effect. Originally, I had a dynamic hashtable in place, one that would rebalance itself and allocate more buckets and redistribute the contents to be more efficient which could have helped this case. I didn't see a major difference between a single lock vs one lock per bucket, so my bottleneck isn't in the hashtable code.
 
 #### Worker Pool Sizing
+> How does performance change with 2, 4, 8, 16 workers? At what point does adding workers stop helping, and why?
+
+The performance benefits from additional worker threads stop scaling between 12 and 16 workers on my machine. I only have 12 cores with hyperthreading and some other stuff running on my laptop, so my hardware cores got saturated. During an intense benchmark I saw my overall CPU utilization hit 120% (probably my boosted clock speed?) which supports my theory.
+
+#### Sweeper Coordination
+> How does your sweeper interact with worker threads? What could go wrong if you held the write lock for the entire sweep pass? What did you do instead (or why did you decide it was fine)?
+
+The sweeper (janitor) thread acquires a write lock on each bucket, goes through each entry and deletes it if it's expired, releases the buckets write lock, and continues through each bucket in the hashtable. If it only held read lock then acquired a write lock if it finds an expired entry it would be faster, but there would be a gap between releasing the read lock and acquiring the write lock so an additional check would be necessary to make sure someone didn't delete the entry before we could, or if the entry was updated so it's expiration is farther in the future or removed entirely.
+
+Or, you could just increase the bucket count to minimize bucket sizes, minimizing this problem with minimal memory and almost zero processing overhead.
+
+We just got done implementing Dijkstra's Algorithm in Algorithms, and that uses a priority queue. I wanted to have the janitor thread use a priority queue to keep track of which entries needed to be deleted first, but I ran out of time.
+
