@@ -38,8 +38,8 @@
             "args": [
                 "localhost",
                 "6379",
-                "4",
-                "10",
+                "1",
+                "1000",
                 "50"
             ],
             "stopAtEntry": false,

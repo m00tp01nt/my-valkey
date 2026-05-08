@@ -19,6 +19,7 @@
 
 #define READ_TRANSMISSION_LENGTH (BENCH_OPERATION_LENGTH + 1 + BENCH_STRING_LENGTH + 1)
 #define WRITE_TRANSMISSION_LENGTH (BENCH_OPERATION_LENGTH + 1 + BENCH_STRING_LENGTH + 1 + BENCH_STRING_LENGTH + 1)
+#define DELETE_TRANSMISSION_LENGTH (BENCH_OPERATION_LENGTH  + 1 + BENCH_STRING_LENGTH + 1)
 
 /**
  * Instead of allocating a new string every request, 
@@ -64,8 +65,7 @@ void* stress_test(void* args) {
 
         randomValue = rand_r(&fseed);
 
-        switch ((int)(randomValue < normalizedReadPercent))
-        {
+        switch ((int)(randomValue < normalizedReadPercent)) {
             case 1:
                 memcpy(
                     get + READ_TEMPLATE_KEY_OFFSET,
@@ -109,7 +109,7 @@ void* stress_test(void* args) {
                         ],
                         BENCH_STRING_LENGTH
                     );
-                    if (write(fd, put, READ_TRANSMISSION_LENGTH) == -1) {
+                    if (write(fd, put, WRITE_TRANSMISSION_LENGTH) == -1) {
                         i = arguments->totalOperations;
                     }
                 } else {
@@ -120,7 +120,7 @@ void* stress_test(void* args) {
                         ],
                         BENCH_STRING_LENGTH
                     );
-                    if (write(fd, del, READ_TRANSMISSION_LENGTH) == -1) {
+                    if (write(fd, del, DELETE_TRANSMISSION_LENGTH) == -1) {
                         i = arguments->totalOperations;
                     }
                 }
