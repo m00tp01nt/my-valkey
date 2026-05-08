@@ -7,16 +7,26 @@
 #   make clean       remove build artifacts
 #   make tsan        build with ThreadSanitizer (Stage 3+ debugging)
 
+SERVER_BIN = kvserver
+BENCH_BIN  = bench_client
+
 CC      = gcc
 CFLAGS  = -Wall -Wextra -Wpedantic -g -pthread
+
+# Making use of enums, need to cover all possible cases
 CFLAGS  += -Wswitch
+
+# Makes it easier to prevent freeing static memory
 CFLAGS  += -Wwrite-strings
 CFLAGS  += -Wcast-qual
-# CFLAGS  += -O2
-CFLAGS  += -O0
+
+# My VSCode debugger was saying variables I was trying to watch were optimized out :(
+CFLAGS  += -O2
+# CFLAGS  += -O0
 
 LDFLAGS = -pthread
 
+# Sharing code between the two halves saves time
 COMMON_SRCS =  src/common/operation.c
 COMMON_SRCS += src/common/response.c
 COMMON_SRCS += src/common/logger.c
@@ -28,16 +38,16 @@ SERVER_SRCS += src/kvserver/hashtable/hashtable.c
 SERVER_SRCS += src/kvserver/queue/queue.c
 SERVER_SRCS += src/kvserver/input/input.c
 SERVER_SRCS += src/kvserver/worker/worker.c
+SERVER_SRCS += src/kvserver/worker/janitor.c
 
 BENCH_SRCS  =  src/benchmark/bench_client.c
 BENCH_SRCS  += src/benchmark/worker/worker.c
 
-SERVER_BIN = kvserver
-BENCH_BIN  = bench_client
-
 .PHONY: all bench clean tsan
 
 all: $(SERVER_BIN) $(BENCH_BIN)
+
+server: $(BENCH_BIN)
 
 bench: $(BENCH_BIN)
 

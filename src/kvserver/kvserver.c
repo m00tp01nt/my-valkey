@@ -34,19 +34,25 @@
 #include "queue/queue.h"
 
 #include "worker/worker.h"
+#include "worker/janitor.h"
 
 /* -------- Globals ------------------------------------------------------- */
 
 static volatile sig_atomic_t g_shutdown = 0;
+static atomic_uint connections = 0;
 
-static void sigint_handler(int sig) {
-    (void)sig;
-
-    printf("Stopping cleanly (Ctrl + C to immeditatly shut down)...\n");
-
-    if (g_shutdown == 1) {
-        printf("Stopped\n");
-        abort();
+// TSan reports a race which is technically true, however:
+//      1) This is a one way transformation between two states
+//      2) This is the only place that shutdown is changed
+//      3) The Janitor is the only other place where this is read,
+//          since we are shutting down it doesn't really matter. 
+static void sigint_handler(int signal) {
+    (void) signal;
+    if (!g_shutdown)
+        printf(SHUTDOWN_MESSAGE_NORMAL);
+    else {
+        printf(SHUTDOWN_MESSAGE_ABORT);
+        _exit(0);
     }
 
     g_shutdown = 1;
@@ -135,12 +141,12 @@ int main(int argc, char **argv) {
     hashtable = hashtable_create(num_buckets);
 
     WorkerAguments workerArgs = {
+        .connections = &connections,
         .hashtable = hashtable,
-        .queue = queue
+        .queue = queue,
     };
 
     pthread_t threads[num_workers];
-
     for (int i = 0; i < num_workers; i++) {
         pthread_create(
             &threads[i],
@@ -149,6 +155,19 @@ int main(int argc, char **argv) {
             (void*)(&workerArgs)
         );
     }
+
+    JanitorArguments janitorArguments;
+    janitorArguments.hashtable = hashtable;
+    janitorArguments.scanFrequencyMs = sweeper_ms;
+    janitorArguments.shutdown = &g_shutdown;
+
+    pthread_t janitor;
+    pthread_create(
+        &janitor,
+        NULL,
+        janitor_work,
+        (void*)(&janitorArguments)
+    );
 
     fprintf(stderr,
         "kvserver: listening on port %d "
@@ -173,32 +192,11 @@ int main(int argc, char **argv) {
 
     for (int i = 0; i < num_workers; i++)
         pthread_join(threads[i], NULL);
-    
+
+    pthread_join(janitor, NULL);
 
     hashtable_destroy(hashtable);
     queue_destroy(queue);
-
-    /* ================================================================
-     * TODO (Stage 1): Sequential accept loop.
-     *   while (!g_shutdown) {
-     *       int conn = accept(listen_fd, NULL, NULL);
-     *       if (conn < 0) { ...handle EINTR on signal, else perror... }
-     *       handle_client(conn);
-     *       close(conn);
-     *   }
-     *
-     * TODO (Stage 2): Initialize work queue + spawn worker threads.
-     *                 The accept loop now enqueues conn fds instead of
-     *                 calling handle_client directly.
-     *
-     * TODO (Stage 3): Initialize the hash table's rwlock before the accept
-     *                 loop starts.
-     *
-     * TODO (Stage 4): Spawn the sweeper thread; join it on shutdown.
-     *
-     * TODO (shutdown): drain queue, join all threads, free everything.
-     * ================================================================ */
-
 
     printf("Stopped\n");
     return 0;

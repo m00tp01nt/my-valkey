@@ -25,8 +25,8 @@ char* commandToString(const Command* command) {
     }
     if (command->ttl != 0) {
         char* ttlString;
-        asprintf(&ttlString, " %u", command->ttl);
-        strcat(buffer, ttlString);
+        if (asprintf(&ttlString, " %u", command->ttl) > 0)
+            strcat(buffer, ttlString);
     }
 
     strcat(buffer, "\n");

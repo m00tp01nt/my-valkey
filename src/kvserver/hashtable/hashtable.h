@@ -11,16 +11,19 @@ typedef struct Hashtable Hashtable;
 
 typedef struct {
 
-    atomic_uint_fast32_t entries;
-    atomic_uint_fast32_t misses;
-    atomic_uint_fast32_t puts;
-    atomic_uint_fast32_t hits;
-    atomic_uint_fast32_t deletes;
-    atomic_uint_fast32_t buckets;
+    unsigned int entries;
+    unsigned int misses;
+    unsigned int puts;
+    unsigned int hits;
+    unsigned int deletes;
+    unsigned int buckets;
 
     time_t creationTime;
 
 } HashtableStatistics;
+
+// Jobs
+void hashtable_job_janitor(Hashtable* hashtable);
 
 // Functions
 Hashtable* hashtable_create(int bucketCount);
@@ -35,6 +38,6 @@ bool hashtable_delete(Hashtable* hashtable, const char* key);
 
 bool hashtable_destroy(Hashtable* hashtable);
 
-HashtableStatistics hashtable_get_statistics(const Hashtable* hashtable);
+HashtableStatistics hashtable_get_statistics(Hashtable* hashtable);
 
-char* hashtable_get_statistics_string(const Hashtable* hashtable);
+char* hashtable_get_statistics_string(Hashtable* hashtable, unsigned int connections);

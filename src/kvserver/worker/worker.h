@@ -1,9 +1,13 @@
 #pragma once
 
+#include <stdatomic.h>
+
 #include "../hashtable/hashtable.h"
 #include "../queue/queue.h"
 
 typedef struct WorkerAguments {
+
+    atomic_uint* connections;
 
     Queue* queue;
     Hashtable* hashtable;
@@ -11,5 +15,3 @@ typedef struct WorkerAguments {
 } WorkerAguments;
 
 void* kvserver_work(void* arg);
-
-void handle_client(int connection, Hashtable* hashtable);

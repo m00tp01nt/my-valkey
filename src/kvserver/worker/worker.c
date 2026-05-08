@@ -7,6 +7,8 @@
 #include "../../common/kv.h"
 #include "../../common/logger.h"
 
+void handle_client(int connection, Hashtable* hashtable, unsigned int);
+
 void* kvserver_work(void* arg) {
 
     WorkerAguments* args = (WorkerAguments*) arg;
@@ -17,28 +19,35 @@ void* kvserver_work(void* arg) {
             queue_entry_destroy(entry);
             break;
         }
-        handle_client(entry->fd, args->hashtable);
+        handle_client(entry->fd, args->hashtable, atomic_fetch_add(args->connections, 1) + 1);
+        atomic_fetch_sub(args->connections, 1);
         queue_entry_destroy(entry);
     }
 
     return NULL;
 }
 
-void handle_client(int connection, Hashtable *hashtable)
+void handle_client(int connection, Hashtable *hashtable, unsigned int connections)
 {
-
+    bool exit = false;
     char* buffer;
 
     while ((buffer = readLine(connection)) != NULL) {
         Command command = parseInput(buffer, I_DELIMITER, I_TERMINATOR);
+        free(buffer);
 
-        logCommand(&command);
+        // logCommand(&command);
 
         if (command.result.response == RES_ERROR) {
             char* response = generateResponseString(command.result);
-            write(connection, response, strlen(response));
+            if (write(connection, response, strlen(response)) < 0) {
+                close(connection);
+                exit = true;
+            }
+            
             free(response);
             freeCommand(&command);
+            if (exit) return;
             continue;
         }
 
@@ -60,7 +69,12 @@ void handle_client(int connection, Hashtable *hashtable)
             
             case PUT:
                 {
-                    bool result = hashtable_put(hashtable, command.key, command.value);
+
+                    bool result = 
+                        command.ttl == 0
+                        ? hashtable_put(hashtable, command.key, command.value)
+                        : hashtable_put_ttl(hashtable, command.key, command.value, command.ttl);
+
                     if (result == false) {
                         command.result.response = RES_ERROR;
                     }
@@ -86,7 +100,7 @@ void handle_client(int connection, Hashtable *hashtable)
 
             case STATS:
                 {
-                    char* stats = hashtable_get_statistics_string(hashtable);
+                    char* stats = hashtable_get_statistics_string(hashtable, connections);
                     if (stats == NULL) {
                         command.result.response = RES_ERROR;
                         command.result.message = NULL;
@@ -102,7 +116,6 @@ void handle_client(int connection, Hashtable *hashtable)
             case QUIT:
                 freeCommand(&command);
                 close(connection);
-                free(buffer);
                 return;
 
             case UNKNOWN:
@@ -110,11 +123,13 @@ void handle_client(int connection, Hashtable *hashtable)
         }
 
         char* response = generateResponseString(command.result);
-        write(connection, response, strlen(response));
+        if (write(connection, response, strlen(response)) < 0) {
+            close(connection);
+            exit = true;
+        }
         free(response);
         freeCommand(&command);
     }
 
     close(connection);
-    free(buffer);
 }

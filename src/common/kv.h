@@ -66,6 +66,11 @@
 #define O_QUIT_MIN_ARGS 0
 #define O_QUIT_MAX_ARGS 0
 
+// Shutdown
+#define SHUTDOWN_MESSAGE_NORMAL "Stopping cleanly (Ctrl + C to immeditatly shut down)...\n"
+#define SHUTDOWN_MESSAGE_ABORT "Aborted\n"
+
+
 /* -------- Your types go here -------------------------------------------- */
 
 /*

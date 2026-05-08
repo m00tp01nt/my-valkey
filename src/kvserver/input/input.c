@@ -80,7 +80,7 @@ Command parseInput(const char* input, char delimiter, char terminator) {
             result.key = strdup(tokens.tokens[1]);
             result.value = strdup(tokens.tokens[2]);
 
-            result.ttl = (arguments == 3) ? (ttl_t) strtoul(tokens.tokens[3], NULL, 10) : 0;
+            result.ttl = (arguments == 3) ? (ttl_t) strtoul(tokens.tokens[3], NULL, 0) : 0;
             break;
 
         case DEL:
@@ -131,6 +131,10 @@ Command parseInput(const char* input, char delimiter, char terminator) {
 
     freeTokens(&tokens);
 
+    if (result.result.response == RES_ERROR) return result;
+
+    argumentsAreValid(&result);
+
     return result;
 }
 
@@ -151,7 +155,7 @@ char* readLine(int fd) {
         if (c == '\n') break;
     }
 
-    if (i == MAX_LINE_LEN) {
+    if (i >= MAX_LINE_LEN) {
         free(buffer);
         return NULL;
     }
@@ -187,7 +191,7 @@ bool argumentsAreValid(Command* command) {
 
     bool problem;
 
-    problem = strnlen(command->key, MAX_KEY_LEN + 1) == MAX_KEY_LEN + 1 ? true : false;
+    problem = strnlen(command->key, MAX_KEY_LEN + 1) >= MAX_KEY_LEN + 1 ? true : false;
     if (problem) {
         command->result.response = RES_ERROR;
         command->result.message = strdup(I_PROBLEM_KEY_TOO_LONG);
@@ -200,7 +204,7 @@ bool argumentsAreValid(Command* command) {
     )
         return true;
 
-    problem = strnlen(command->value, MAX_VAL_LEN + 1) == MAX_VAL_LEN + 1 ? true : false;
+    problem = strnlen(command->value, MAX_VAL_LEN + 1) >= MAX_VAL_LEN + 1 ? true : false;
     if (problem) {
         command->result.response = RES_ERROR;
         command->result.message = strdup(I_PROBLEM_VAL_TOO_LONG);
